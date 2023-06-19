@@ -35,7 +35,7 @@ public:
     vec m_range; // DSM was private
     vec m_factor_inv; // DSM was private
 	array3d<fl> m_data; // FIXME? - make cache a friend, and convert this back to private?
-	grid() : m_init(0, 0, 0), m_range(1, 1, 1), m_factor(1, 1, 1), m_dim_fl_minus_1(-1, -1, -1), m_factor_inv(1, 1, 1) {} // not private
+	grid() : m_init(0, 0, 0), m_range(1, 1, 1), m_factor_inv(1, 1, 1), m_factor(1, 1, 1), m_dim_fl_minus_1(-1, -1, -1) {} // not private
 	grid(const grid_dims& gd) { init(gd); }
     void init(const grid_dims& gd);
 	vec index_to_argument(sz x, sz y, sz z) const {
@@ -48,7 +48,7 @@ public:
 	}
 	fl evaluate(const vec& location, fl slope, fl c)             const { return evaluate_aux(location, slope, c, NULL);   }
 	fl evaluate(const vec& location, fl slope, fl c, vec& deriv) const { return evaluate_aux(location, slope, c, &deriv); } // sets deriv
-private:
+public:
     vec m_factor;
     vec m_dim_fl_minus_1;
 

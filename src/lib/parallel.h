@@ -57,7 +57,7 @@ struct parallel_for : private boost::thread_group {
         }
         join_all(); 
     }
-private:
+public:
 	void loop(sz offset) {
 		while(boost::optional<sz> sz_option = get_size(offset)) {
 			sz s = sz_option.get();
@@ -119,7 +119,7 @@ struct parallel_for<F, true> : private boost::thread_group {
         }
         join_all(); 
     }
-private:
+public:
 	void loop() {
 		while(boost::optional<sz> i = get_next()) {
 			(*m_f)(i.get());
@@ -163,7 +163,7 @@ struct parallel_iter {
 		a.v = &v;
 		pf.run(v.size());
 	}
-private:
+public:
 	struct aux {
 		const F* f;
 		Container* v;

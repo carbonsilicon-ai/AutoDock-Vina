@@ -23,6 +23,7 @@
 #include "vina.h"
 #include "scoring_function.h"
 #include "precalculate.h"
+#include "cuvina/cuvina.h"
 
 
 void Vina::cite() {
@@ -133,6 +134,11 @@ void Vina::set_ligand_from_string(const std::string& ligand_string) {
 	m_poses = poses;
 	m_precalculated_byatom = precalculated_byatom;
 	m_ligand_initialized = true;
+	if (!cpu_only) {
+		if (!dock::makePrecalcByAtom(m_precalculated_byatom)) {
+			set_cpu_only();
+		}
+	}
 }
 
 void Vina::set_ligand_from_string(const std::vector<std::string>& ligand_string) {
@@ -178,6 +184,11 @@ void Vina::set_ligand_from_string(const std::vector<std::string>& ligand_string)
 	m_poses = poses;
 	m_precalculated_byatom = precalculated_byatom;
 	m_ligand_initialized = true;
+	if (!cpu_only) {
+		if (!dock::makePrecalcByAtom(m_precalculated_byatom)) {
+			set_cpu_only();
+		}
+	}
 }
 
 void Vina::set_ligand_from_file(const std::string& ligand_name) {
@@ -798,7 +809,7 @@ std::vector<double> Vina::optimize(output_type& out, int max_steps) {
 	// Local optimization of the ligand conf
 	change g(m_model.get_size());
 	quasi_newton quasi_newton_par;
-	const fl slope = 1e6;
+	// const fl slope = 1e6;
 	const vec authentic_v(1000, 1000, 1000);
 	std::vector<double> energies_before_opt;
 	std::vector<double> energies_after_opt;
@@ -881,6 +892,7 @@ output_container Vina::remove_redundant(const output_container &in, fl min_rmsd)
 }
 
 void Vina::global_search(const int exhaustiveness, const int n_poses, const double min_rmsd, const int max_evals) {
+
 	// Vina search (Monte-carlo and local optimization)
 	// Check if ff, box and ligand were initialized
 	if (!m_ligand_initialized) {
@@ -898,7 +910,17 @@ void Vina::global_search(const int exhaustiveness, const int n_poses, const doub
 		std::cerr << "WARNING: At low exhaustiveness, it may be impossible to utilize all CPUs.\n";
 	}
 
-	double e = 0;
+	if (!cpu_only) {
+		if (!dock::makeSrcModel(&m_model, m_precalculated_byatom)) {
+			set_cpu_only();
+		}
+	}
+	if (!cpu_only) {
+		if (!dock::makeCache(m_grid)) {
+			set_cpu_only();
+		}
+	}
+	// double e = 0;
 	double intramolecular_energy = 0;
 	const vec authentic_v(1000, 1000, 1000);
 	model best_model;
@@ -916,9 +938,13 @@ void Vina::global_search(const int exhaustiveness, const int n_poses, const doub
 	parallelmc.mc.min_rmsd = min_rmsd;
 	parallelmc.mc.num_saved_mins = n_poses;
 	parallelmc.mc.hunt_cap = vec(10, 10, 10);
+	// parallelmc.num_tasks = 1;
 	parallelmc.num_tasks = exhaustiveness;
 	parallelmc.num_threads = m_cpu;
 	parallelmc.display_progress = (m_verbosity > 0);
+	if (!cpu_only) {
+		parallelmc.enable_gpu(16);
+	}
 
 	// Docking search
 	sstm << "Performing docking (random seed: " << m_seed << ")";
@@ -931,7 +957,9 @@ void Vina::global_search(const int exhaustiveness, const int n_poses, const doub
 	done(m_verbosity, 1);
 
 	// Docking post-processing and rescoring
+	printf("poses before removing redundant %lu\n", poses.size());
 	poses = remove_redundant(poses, min_rmsd);
+	printf("poses after removing redundant %lu\n", poses.size());
 
 	if (!poses.empty()) {
 		// For the Vina scoring function, we take the intramolecular energy from the best pose
@@ -948,9 +976,10 @@ void Vina::global_search(const int exhaustiveness, const int n_poses, const doub
 				const fl slope = 1e6;
 				m_non_cache.slope = slope;
 				quasi_newton_par.max_steps = unsigned((25 + m_model.num_movable_atoms()) / 3);
+				quasi_newton_par.use_gpu = false;
 
 				VINA_FOR_IN(i, poses){
-					const fl slope_orig = m_non_cache.slope;
+					// const fl slope_orig = m_non_cache.slope;
 					VINA_FOR(p, 5){
 						m_non_cache.slope = 100 * std::pow(10.0, 2.0*p);
 						quasi_newton_par(m_model, m_precalculated_byatom, m_non_cache, poses[i], g, authentic_v, evalcount);
@@ -1039,10 +1068,10 @@ Vina::~Vina() {
 	model m_receptor;
 	model m_model;
 	output_container m_poses;
-	bool m_receptor_initialized;
-	bool m_ligand_initialized;
+	// bool m_receptor_initialized;
+	// bool m_ligand_initialized;
 	// scoring function
-	scoring_function_choice m_sf_choice;
+	// scoring_function_choice m_sf_choice;
 	flv m_weights;
 	ScoringFunction m_scoring_function;
 	precalculate_byatom m_precalculated_byatom;
@@ -1051,10 +1080,10 @@ Vina::~Vina() {
 	cache m_grid;
 	ad4cache m_ad4grid;
 	non_cache m_non_cache;
-	bool m_map_initialized;
+	// bool m_map_initialized;
 	// global search
-	int m_cpu;
-	int m_seed;
+	// int m_cpu;
+	// int m_seed;
 	// others
-	int m_verbosity;
+	// int m_verbosity;
 }

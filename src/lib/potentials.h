@@ -148,7 +148,7 @@ public:
         return gauss(r - (optimal_distance(t1, t2) + offset)); // hard-coded to XS atom type
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl offset; // added to optimal distance
     fl width;
     fl cutoff;
@@ -181,7 +181,7 @@ public:
         return d*d;
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl offset; // added to vdw
     fl cutoff;
 };
@@ -208,7 +208,7 @@ public:
             return 0.0;
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl good;
     fl bad;
     fl cutoff;
@@ -235,7 +235,7 @@ public:
         return 0.0;
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl good;
     fl bad;
     fl cutoff;
@@ -259,7 +259,7 @@ public:
         return gauss(r - (optimal_distance_vinardo(t1, t2) + offset)); // hard-coded to XS atom type
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl offset; // added to optimal distance
     fl width;
     fl cutoff;
@@ -292,7 +292,7 @@ public:
         return d*d;
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl offset; // added to vdw
     fl cutoff;
 };
@@ -319,7 +319,7 @@ public:
             return 0.0;
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl good;
     fl bad;
     fl cutoff;
@@ -346,7 +346,7 @@ public:
         return 0.0;
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl good;
     fl bad;
     fl cutoff;
@@ -372,7 +372,7 @@ public:
     };
     fl eval(sz t1, sz t2, fl r) { return 0; }
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl cap;
     fl cutoff;
 };
@@ -400,10 +400,10 @@ public:
     };
     fl eval(sz t1, sz t2, fl r) { return 0; }
     fl get_cutoff() { return cutoff; }
-private:
-    fl desolvation_sigma;
+public:
     fl solvation_q;
     bool charge_dependent;
+    fl desolvation_sigma;
     fl cutoff;
 
     fl volume(const atom_type& a) const {
@@ -451,7 +451,7 @@ public:
     };
     fl eval(sz t1, sz t2, fl r) { return 0; }
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl smoothing;
     fl cap;
     fl cutoff;
@@ -468,7 +468,7 @@ public:
         sz t2 = b.ad;
         fl hb_rij = ad4_hb_radius(t1) + ad4_hb_radius(t2);
         fl hb_depth = ad4_hb_eps(t1) * ad4_hb_eps(t2);
-        fl vdw_rij = ad4_vdw_radius(t1) + ad4_vdw_radius(t2);
+        // fl vdw_rij = ad4_vdw_radius(t1) + ad4_vdw_radius(t2);// unused
         if (hb_depth >= 0)
             return 0.0; // interaction is vdw, not hb.
         r = smoothen(r, hb_rij, smoothing);
@@ -485,7 +485,7 @@ public:
     };
     fl eval(sz t1, sz t2, fl r) { return 0; }
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl smoothing;
     fl cap;
     fl cutoff;
@@ -512,7 +512,7 @@ public:
             return 0.0;
     };
     fl get_cutoff() { return cutoff; }
-private:
+public:
     fl cutoff;
 };
 

@@ -34,7 +34,7 @@ struct grid_dim {
 	grid_dim() : begin(0), end(0), n_voxels(0) {}
 	fl span() const { return end - begin; }
 	bool enabled() const { return (n_voxels > 0); }
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned version) {

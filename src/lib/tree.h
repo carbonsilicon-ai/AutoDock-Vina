@@ -25,11 +25,17 @@
 
 #include "conf.h"
 #include "atom.h"
+#include "log.h"
 
 struct frame {
 	frame(const vec& origin_) : origin(origin_), orientation_q(qt_identity), orientation_m(quaternion_to_r3(qt_identity)) {}
 	vec local_to_lab(const vec& local_coords) const {
 		vec tmp;
+		VDUMP("    origin", origin);
+#if VINADEBUG
+		auto m = orientation_m.data;
+#endif
+		DBG("    orm: %f %f %f %f %f %f %f %f %f", m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
 		tmp = origin + orientation_m*local_coords; 
 		return tmp;
 	}
@@ -40,14 +46,21 @@ struct frame {
 	}
 	const qt& orientation() const { return orientation_q; }
 	const vec& get_origin() const { return origin; }
-protected:
+public:
 	vec origin;
 	void set_orientation(const qt& q) { // does not normalize the orientation
+#if VINADEBUG
+			fl q1 = q.R_component_1();
+			fl q2 = q.R_component_2();
+			fl q3 = q.R_component_3();
+			fl q4 = q.R_component_4();
+			DBG("set orientation: %f %f %f %f", q1, q2, q3, q4);
+#endif
 		orientation_q = q;
 		orientation_m = quaternion_to_r3(orientation_q);
 	}
-	mat orientation_m;
 	qt  orientation_q;
+	mat orientation_m;
 };
 
 struct atom_range {
@@ -65,17 +78,31 @@ struct atom_range {
 struct atom_frame : public frame, public atom_range {
 	atom_frame(const vec& origin_, sz begin_, sz end_) : frame(origin_), atom_range(begin_, end_) {}
 	void set_coords(const atomv& atoms, vecv& coords) const {
-		VINA_RANGE(i, begin, end)
+		VINA_RANGE(i, begin, end) {
+			DBG("set coords %lu", i);
+			VDUMP("    local coords(atoms)", atoms[i].coords);
+			VDUMP("    before coords", coords[i]);
 			coords[i] = local_to_lab(atoms[i].coords);
+			VDUMP("    coords", coords[i]);
+		}
 	}
 	vecp sum_force_and_torque(const vecv& coords, const vecv& forces) const {
 		vecp tmp;
 		tmp.first.assign(0);
 		tmp.second.assign(0);
+		DBG("frame begin %lu end %lu", begin, end);
 		VINA_RANGE(i, begin, end) {
 			tmp.first  += forces[i]; 
-			tmp.second += cross_product(coords[i] - origin, forces[i]);
+			auto product = cross_product(coords[i] - origin, forces[i]);
+			tmp.second += product;
+			DBG("    frame %lu", i);
+			VDUMP("    force", forces[i]);
+			VDUMP("    coords", coords[i]);
+			VDUMP("    origin", origin);
+			VDUMP("    product", product);
+			VDUMP("    second", tmp.second);
 		}
+		VECPDUMP("sumft", tmp);
 		return tmp;
 	}
 };
@@ -92,6 +119,20 @@ struct rigid_body : public atom_frame {
 		c.position     = force_torque.first;
 		c.orientation  = force_torque.second;
 	}
+	vec axis; // add this just for better code in cuvina
+	void print() const {
+		printf("\trigid body begin %lu end %lu\n", begin, end);
+		printf("\t\taxis: %f %f %f\n", axis.data[0], axis.data[1], axis.data[2]);
+		printf("\t\torigin: %f %f %f\n", origin.data[0], origin.data[1], origin.data[2]);
+        printf("\t\torq: %f %f %f %f\n", orientation_q.R_component_1(),
+               orientation_q.R_component_2(), orientation_q.R_component_3(),
+               orientation_q.R_component_4());
+        ;
+        printf("\t\torm: %f %f %f %f %f %f %f %f %f\n", orientation_m.data[0],
+               orientation_m.data[1], orientation_m.data[2], orientation_m.data[3],
+               orientation_m.data[4], orientation_m.data[5], orientation_m.data[6],
+               orientation_m.data[7], orientation_m.data[8]);
+    }
 };
 
 struct axis_frame : public atom_frame {
@@ -102,9 +143,12 @@ struct axis_frame : public atom_frame {
 		axis = (1/nrm) * diff;
 	}
 	void set_derivative(const vecp& force_torque, fl& c) const {
+		VDUMP("    set der torque", force_torque.second);
+		VDUMP("    set der axis", axis);
+		VDUMP("    set der origin", origin);
 		c = force_torque.second * axis;
 	}
-protected:
+public:
 	vec axis;
 };
 
@@ -117,10 +161,38 @@ struct segment : public axis_frame {
 	void set_conf(const frame& parent, const atomv& atoms, vecv& coords, flv::const_iterator& c) {
 		const fl torsion = *c;
 		++c;
+		VDUMP("    local coords", relative_origin);
+		VDUMP("    local axis", relative_axis);
 		origin = parent.local_to_lab(relative_origin);
 		axis = parent.local_to_lab_direction(relative_axis);
+		VDUMP("    my origin", origin);
+		VDUMP("    axis", axis);
+		DBG("torsion %f", torsion);
+#if VINADEBUG
+		auto &t = parent.orientation();
+			fl q1 = t.R_component_1();
+			fl q2 = t.R_component_2();
+			fl q3 = t.R_component_3();
+			fl q4 = t.R_component_4();
+		DBG("parent orientation %f %f %f %f", q1, q2, q3, q4);
+#endif
 		qt tmp = angle_to_quaternion(axis, torsion) * parent.orientation();
+#if VINADEBUG
+			q1 = tmp.R_component_1();
+			q2 = tmp.R_component_2();
+			q3 = tmp.R_component_3();
+			q4 = tmp.R_component_4();
+		DBG("tmp %f %f %f %f", q1, q2, q3, q4);
+#endif
+
 		quaternion_normalize_approx(tmp); // normalization added in 1.1.2
+#if VINADEBUG
+			q1 = tmp.R_component_1();
+			q2 = tmp.R_component_2();
+			q3 = tmp.R_component_3();
+			q4 = tmp.R_component_4();
+		DBG("approx tmp %f %f %f %f", q1, q2, q3, q4);
+#endif
 		//quaternion_normalize(tmp); // normalization added in 1.1.2
 		set_orientation(tmp);
 		set_coords(atoms, coords);
@@ -128,7 +200,22 @@ struct segment : public axis_frame {
 	void count_torsions(sz& s) const {
 		++s;
 	}
-private:
+	void print() const {
+		printf("\tsegment begin %lu end %lu\n", begin, end);
+		printf("\t\taxis: %f %f %f\n", axis.data[0], axis.data[1], axis.data[2]);
+		printf("\t\trelative axis: %f %f %f\n", relative_axis.data[0], relative_axis.data[1], relative_axis.data[2]);
+		printf("\t\trelative origin: %f %f %f\n", relative_origin.data[0], relative_origin.data[1], relative_origin.data[2]);
+		printf("\t\torigin: %f %f %f\n", origin.data[0], origin.data[1], origin.data[2]);
+        printf("\t\torq: %f %f %f %f\n", orientation_q.R_component_1(),
+               orientation_q.R_component_2(), orientation_q.R_component_3(),
+               orientation_q.R_component_4());
+        ;
+        printf("\t\torm: %f %f %f %f %f %f %f %f %f\n", orientation_m.data[0],
+               orientation_m.data[1], orientation_m.data[2], orientation_m.data[3],
+               orientation_m.data[4], orientation_m.data[5], orientation_m.data[6],
+               orientation_m.data[7], orientation_m.data[8]);
+	}
+public:
 	vec relative_axis;
 	vec relative_origin;
 };
@@ -153,11 +240,18 @@ void branches_set_conf(std::vector<T>& b, const frame& parent, const atomv& atom
 
 template<typename T> // T == branch
 void branches_derivative(const std::vector<T>& b, const vec& origin, const vecv& coords, const vecv& forces, vecp& out, flv::iterator& d) { // adds to out
+	VECPDUMP("startft", out);
 	VINA_FOR_IN(i, b) {
 		vecp force_torque = b[i].derivative(coords, forces, d);
+		VECPDUMP("childft", force_torque);
 		out.first  += force_torque.first;
-		vec r; r = b[i].node.get_origin() - origin;
+		auto o = b[i].node.get_origin();
+		vec r; r = o - origin;
+		// todo
+		VDUMP("my origin", origin);
+		VDUMP("child origin", o);
 		out.second += cross_product(r, force_torque.first) + force_torque.second;
+		VECPDUMP("childft added", out);
 	}
 }
 
@@ -165,6 +259,10 @@ template<typename T> // T == segment
 struct tree {
 	T node;
 	std::vector< tree<T> > children;
+	int nr_nodes; // record how many T in children
+	int idx;
+	int parentIdx;
+	int layer;
 	tree(const T& node_) : node(node_) {}
 	void set_conf(const frame& parent, const atomv& atoms, vecv& coords, flv::const_iterator& c) {
 		node.set_conf(parent, atoms, coords, c);
@@ -176,7 +274,16 @@ struct tree {
 		++p;
 		branches_derivative(children, node.get_origin(), coords, forces, force_torque, p);
 		node.set_derivative(force_torque, d);
+		DBG("TreeDer idx %d c %f", idx, d);
+		VECPDUMP("    tree ft", force_torque);
+		// VDUMP("    forces", forces);
 		return force_torque;
+	}
+	void print() const {
+		for (auto &c : children) {
+			c.print();
+		}
+		node.print();
 	}
 };
 
@@ -187,6 +294,7 @@ template<typename Node> // Node == first_segment || rigid_body
 struct heterotree {
 	Node node;
 	branches children;
+	int nr_nodes = 0; // record how many T in children
 	heterotree(const Node& node_) : node(node_) {}
 	void set_conf(const atomv& atoms, vecv& coords, const ligand_conf& c) {
 		node.set_conf(atoms, coords, c.rigid);
@@ -216,6 +324,12 @@ struct heterotree {
 		branches_derivative(children, node.get_origin(), coords, forces, force_torque, p);
 		node.set_derivative(force_torque, d);
 		assert(p == c.torsions.end());
+	}
+	void print() const {
+		for (auto &b : children) {
+			b.print();
+		}
+		node.print();
 	}
 };
 

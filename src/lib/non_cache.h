@@ -35,7 +35,7 @@ struct non_cache : public igrid {
 	virtual fl eval_deriv(      model& m, fl v) const; // needs m.coords, sets m.minus_forces // clean up
 	bool within(const model& m, fl margin = 0.0001) const;
 	fl slope;
-private:
+public:
 	szv_grid sgrid;
 	grid_dims gd;
 	const precalculate* p;

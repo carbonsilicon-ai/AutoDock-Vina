@@ -56,7 +56,7 @@ std::string get_adtype_str(sz& t) {
 
 fl ad4cache::eval(const model& m, fl v) const {
 	fl e = 0;
-	sz nat = num_atom_types(atom_type::AD);
+	// sz nat = num_atom_types(atom_type::AD);
 
 	VINA_FOR(i, m.num_movable_atoms()) {
 		if(!m.is_atom_in_ligand(i)) continue; // we only want ligand interaction
@@ -95,7 +95,7 @@ fl ad4cache::eval(const model& m, fl v) const {
 
 fl ad4cache::eval_intra(model& m, fl v) const {
 	fl e = 0;
-	sz nat = num_atom_types(atom_type::AD);
+	// sz nat = num_atom_types(atom_type::AD);
 
 	VINA_FOR(i, m.num_movable_atoms()) {
 		if(m.is_atom_in_ligand(i)) continue; // we only want flex-rigid interaction
@@ -134,7 +134,7 @@ fl ad4cache::eval_intra(model& m, fl v) const {
 
 fl ad4cache::eval_deriv(model& m, fl v) const { // sets m.minus_forces
 	fl e = 0;
-	sz nat = num_atom_types(atom_type::AD);
+	// sz nat = num_atom_types(atom_type::AD);
 
 	VINA_FOR(i, m.num_movable_atoms()) {
 		const atom& a = m.atoms[i];
@@ -248,7 +248,7 @@ void read_ad4_map(path& filename, std::vector<grid_dims>& gds, grid& g) {
 	sz z = 0;
 	grid_dims gd;
 	std::string line;
-	fl spacing, center, halfspan;
+	fl spacing = 0, center, halfspan;
 
 	ifile in(filename);
 

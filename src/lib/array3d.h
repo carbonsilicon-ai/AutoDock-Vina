@@ -40,6 +40,7 @@ inline sz checked_multiply(sz i, sz j, sz k) {
 
 template<typename T>
 class array3d {
+public:
 	sz m_i, m_j, m_k;
 	std::vector<T> m_data;
 	friend class boost::serialization::access;

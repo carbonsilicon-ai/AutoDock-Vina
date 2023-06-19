@@ -23,6 +23,7 @@
 #include "cache.h"
 #include "model.h"
 #include "precalculate.h"
+#include "log.h"
 
 
 namespace fs = boost::filesystem;
@@ -130,10 +131,12 @@ fl cache::eval_intra(model& m, fl v) const {
 fl cache::eval_deriv(model& m, fl v) const { // needs m.coords, sets m.minus_forces
 	fl e = 0;
 	sz nat = num_atom_types(atom_type::XS);
+	DBG("NAT %lu", nat);
 
 	VINA_FOR(i, m.num_movable_atoms()) {
 		const atom& a = m.atoms[i];
 		sz t = a.get(atom_type::XS);
+		DBG("cache %lu t %lu", i, t);
 
 		if (t >= nat) { m.minus_forces[i].assign(0); continue; }
 		switch (t)
@@ -160,7 +163,11 @@ fl cache::eval_deriv(model& m, fl v) const { // needs m.coords, sets m.minus_for
 
 		vec deriv;
 		const grid& g = m_grids[t];
-		e += g.evaluate(m.coords[i], m_slope, v, deriv);
+		DBG("coord %f %f %f", m.coords[i].data[0], m.coords[i].data[1], m.coords[i].data[2]);
+		auto e1 = g.evaluate(m.coords[i], m_slope, v, deriv);
+		DBG("cache %lu eval e %f", i, e1);
+		VDUMP("force deriv", deriv);
+		e += e1;
 		m.minus_forces[i] = deriv;
 	}
 	return e;
@@ -239,7 +246,7 @@ void read_vina_map(path &filename, std::vector<grid_dims> &gds, grid &g) {
 	sz z = 0;
 	grid_dims gd;
 	std::string line;
-	fl spacing, center, halfspan;
+	fl spacing = 0, center, halfspan;
 
 	ifile in(filename);
 

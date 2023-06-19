@@ -64,7 +64,7 @@ struct atom_type {
 	fl optimal_covalent_bond_length(const atom_type& x) const {
 		return covalent_radius() + x.covalent_radius();
 	}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive> 
 	void serialize(Archive& ar, const unsigned version) {

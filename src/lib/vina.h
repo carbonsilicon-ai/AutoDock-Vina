@@ -50,7 +50,7 @@
 #include "ad4cache.h"
 #include "quasi_newton.h"
 #include "coords.h" // add_to_output_container
-#include "utils.h"
+#include "vina_utils.h"
 #include "scoring_function.h"
 #include "precalculate.h"
 
@@ -99,6 +99,10 @@ public:
 	// Destructor
 	~Vina();
 
+	void set_cpu_only() {
+		cpu_only = true;
+		std::cout << "CPU Only" << std::endl;
+	}
 	void cite();
 	int seed() { return m_seed; }
 	void set_receptor(const std::string &rigid_name=std::string(), const std::string &flex_name=std::string());
@@ -137,7 +141,7 @@ public:
 					    const std::string& fld_filename="NULL", const std::string& receptor_filename="NULL");
 	void show_score(const std::vector<double> energies);
 
-private:
+public:
 	// model and poses
 	model m_receptor;
 	model m_model;
@@ -171,6 +175,9 @@ private:
 	std::vector<double> score(double intramolecular_energy);
 	std::vector<double> optimize(output_type& out, const int max_steps=0);
 	int generate_seed(const int seed=0);
+
+	bool cpu_only = false;
+	std::shared_ptr<void> m_gpu;
 };
 
 #endif

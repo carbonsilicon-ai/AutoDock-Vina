@@ -57,9 +57,9 @@ typedef std::pair<fl, fl> pr;
 struct vec {
 	fl data[3];
 	vec() {
-#ifndef NDEBUG
+// #ifndef NDEBUG
 		data[0] = data[1] = data[2] = not_a_num;
-#endif
+// #endif
 	}
 	vec(fl x, fl y, fl z) {
 		data[0] = x;
@@ -121,7 +121,7 @@ struct vec {
 		data[0] = data[1] = data[2] = s;
 	}
 	sz size() const { return 3; }
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive> 
 	void serialize(Archive& ar, const unsigned version) {
@@ -333,7 +333,6 @@ inline void print(const vec& v, std::ostream& out = std::cout) {
 	}
 	out << ")";
 }
-
 template<typename T>
 void print(const std::vector<T>& v, std::ostream& out = std::cout) {
 	out << "[";

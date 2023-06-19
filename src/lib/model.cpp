@@ -25,6 +25,7 @@
 #include "model.h"
 #include "file.h"
 #include "curl.h"
+#include "log.h"
 #include "precalculate.h"
 
 template<typename T>
@@ -357,8 +358,8 @@ void model::assign_bonds(const distance_type_matrix& mobility) { // assign bonds
 			VINA_FOR_IN(bead_elements_i, bead_elements) {
 				sz j = bead_elements[bead_elements_i];
 				atom_index j_atom_index = sz_to_atom_index(j);
-				atom& j_atom = get_atom(j_atom_index);
-				const fl bond_length = i_atom.optimal_covalent_bond_length(j_atom);
+				// atom& j_atom = get_atom(j_atom_index);
+				// const fl bond_length = i_atom.optimal_covalent_bond_length(j_atom);
 				distance_type dt = distance_type_between(mobility, i_atom_index, j_atom_index);
 				if(dt != DISTANCE_VARIABLE && i != j) {
 					fl r2 = distance_sqr_between(i_atom_index, j_atom_index);
@@ -773,28 +774,37 @@ fl eval_interacting_pairs(const precalculate_byatom& p, fl v, const interacting_
 	return e;
 }
 
-fl eval_interacting_pairs_deriv(const precalculate_byatom& p, fl v, const interacting_pairs& pairs, const vecv& coords, vecv& forces, const bool with_max_cutoff) { // adds to forces  // clean up
+
+fl eval_interacting_pairs_deriv(int &seq, const precalculate_byatom& p, fl v, const interacting_pairs& pairs, const vecv& coords, vecv& forces, const bool with_max_cutoff) { // adds to forces  // clean up
 	fl e = 0;
 	fl cutoff_sqr = p.cutoff_sqr();
 
 	if (with_max_cutoff) {
 		cutoff_sqr = p.max_cutoff_sqr();
 	}
+	DBG("eval pair  cutoff %f v %f", cutoff_sqr, v);
 
 	VINA_FOR_IN(i, pairs) {
 		const interacting_pair& ip = pairs[i];
+		// printf("\tpair %lu a %lu b %lu\n", i, ip.a, ip.b);
 		vec r = coords[ip.b] - coords[ip.a]; // a -> b
 		fl r2 = sqr(r);
+		DBG("    seq %d, a %lu b %lu r2 %f", seq, ip.a, ip.b, r2);
+		VDUMP("r", r);
 		if(r2 < cutoff_sqr) {
 			pr tmp = p.eval_deriv(ip.a, ip.b, r2);
+			DBG("atom der %f %f", tmp.first, tmp.second);
 			vec force; force = tmp.second * r;
 			curl(tmp.first, force, v);
+			DBG("e %f", tmp.first);
+			VDUMP("force", force);
 			e += tmp.first;
 
 			// FIXME inefficient, if using hard curl
 			forces[ip.a] -= force; // we could omit forces on inflex here
 			forces[ip.b] += force;
 		}
+		seq ++;
 	}
 	return e;
 }
@@ -819,20 +829,35 @@ fl model::evali(const precalculate_byatom& p, const vec& v) const { // clean up
 fl model::eval_deriv(const precalculate_byatom& p, const igrid& ig, const vec& v, change& g) { // clean up
 	// INTER ligand - grid
 	fl e = ig.eval_deriv(*this, v[1]); // sets minus_forces, except inflex
+	DBG("ig eval e %f", e);
+	VECVDUMP("ig eval minus forces", minus_forces);
+
+	int seq = 0;
 
 	// INTRA ligand_i - ligand_i
-	VINA_FOR_IN(i, ligands)
-		e += eval_interacting_pairs_deriv(p, v[0], ligands[i].pairs, coords, minus_forces); // adds to minus_forces
+	VINA_FOR_IN(i, ligands) {
+		// printf("ligand %lu\n", i);
+		auto e1 = eval_interacting_pairs_deriv(seq, p, v[0], ligands[i].pairs, coords, minus_forces); // adds to minus_forces
+		DBG("ligands %lu e %f", i, e1);
+		e += e1;
+	}
 
 	// INTER ligand_i - ligand_j and ligand_i - flex_i
-	if (!inter_pairs.empty()) 
-		e += eval_interacting_pairs_deriv(p, v[2], inter_pairs, coords, minus_forces); // adds to minus_forces
+	if (!inter_pairs.empty())  {
+		// printf("inter pairs\n");
+		auto e1 = eval_interacting_pairs_deriv(seq, p, v[2], inter_pairs, coords, minus_forces); // adds to minus_forces
+		e += e1;
+	}
 	// INTRA flex_i - flex_i and flex_i - flex_j
-	if (!other_pairs.empty())
-		e += eval_interacting_pairs_deriv(p, v[2], other_pairs, coords, minus_forces); // adds to minus_forces
+	if (!other_pairs.empty()) {
+		// printf("other pairs\n");
+		e += eval_interacting_pairs_deriv(seq, p, v[2], other_pairs, coords, minus_forces); // adds to minus_forces
+	}
 	// glue_i - glue_i and glue_i - glue_j
-	if (!glue_pairs.empty())
-		e += eval_interacting_pairs_deriv(p, v[2], glue_pairs, coords, minus_forces, true); // adds to minus_forces
+	if (!glue_pairs.empty()) {
+		// printf("glue pairs\n");
+		e += eval_interacting_pairs_deriv(seq, p, v[2], glue_pairs, coords, minus_forces, true); // adds to minus_forces
+	}
 
 	// calculate derivatives
 	ligands.derivative(coords, minus_forces, g.ligands);
@@ -913,6 +938,7 @@ fl model::rmsd_upper_bound(const model& m) const {
 		const atom& b = m.atoms[i];
 		assert(a.ad == b.ad);
 		assert(a.xs == b.xs);
+		(void)b;
 		if(a.el != EL_TYPE_H) {
 			sum += vec_distance_sqr(coords[i], m.coords[i]);
 			++counter;
@@ -935,6 +961,7 @@ fl model::rmsd_ligands_upper_bound(const model& m) const {
 			const atom& b = m.atoms[i];
 			assert(a.ad == b.ad);
 			assert(a.xs == b.xs);
+			(void)b;
 			if(a.el != EL_TYPE_H) {
 				sum += vec_distance_sqr(coords[i], m.coords[i]);
 				++counter;
@@ -1127,4 +1154,17 @@ fl model::clash_penalty() const {
 		e += clash_penalty_aux(ligands[i].pairs);
 	e += clash_penalty_aux(other_pairs);
 	return e;
+}
+void model::print() const {
+	printf("coords:\n");
+	for (auto i = 0u; i < coords.size(); i++) {
+		printf("\t%u: %f %f %f\n", i, coords[i].data[0], coords[i].data[1], coords[i].data[2]);
+	}
+	if (!ligands.empty())  {
+		for (auto i = 0u; i < ligands.size(); i++) {
+			auto &lg = ligands[i];
+			printf("==== ligand %u ====\n", i);
+			lg.print();
+		}
+	}
 }

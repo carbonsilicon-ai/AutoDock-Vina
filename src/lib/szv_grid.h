@@ -32,7 +32,7 @@ struct szv_grid {
 	szv_grid(const model& m, const grid_dims& gd, fl cutoff_sqr);
 	const szv& possibilities(const vec& coords) const;
 	fl average_num_possibilities() const;
-private:
+public:
 	array3d<szv> m_data;
 	vec m_init;
 	vec m_range;

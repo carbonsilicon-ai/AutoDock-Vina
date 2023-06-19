@@ -1,0 +1,100 @@
+cmake_minimum_required(VERSION "3.0.0" FATAL_ERROR)
+project(dockcpp)
+
+find_program(CCACHE "ccache")
+if (CCACHE)
+    message(STATUS "ccache found at ${CCACHE}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+    set(CMAKE_CUDA_COMPILER_LAUNCHER ${CCACHE})
+endif()
+
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++14 -DUSE_CUDA -DDLIB_NO_GUI_SUPPORT")
+
+# nvci does not support openmp, so we set nvcc flags in advance
+set(NVCC_FLAGS_RELEASE -std=c++14 -DUSE_CUDA -DDLIB_NO_GUI_SUPPORT -DNDEBUG -O3 -w)
+# set(NVCC_FLAGS_RELEASE -g -G -std=c++14 -DUSE_CUDA -DDLIB_NO_GUI_SUPPORT -DNDEBUG -O0 -w)
+#set(CUDA_NVCC_FLAGS ${NVCC_FLAGS_RELEASE} ${CUDA_NVCC_FLAGS} -arch=sm_75 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_60,code=sm_60 
+#    -gencode arch=compute_61,code=sm_61 -gencode arch=compute_75,code=compute_75 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_86,code=sm_86; 
+#    --use_fast_math)
+set(CUDA_NVCC_FLAGS ${NVCC_FLAGS_RELEASE} ${CUDA_NVCC_FLAGS} -arch=sm_75 -gencode arch=compute_75,code=compute_75 -gencode arch=compute_86,code=sm_86; 
+    --use_fast_math)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -fno-strict-aliasing -Wno-deprecated-declarations -Wno-unused-local-typedefs -Wno-parentheses -Wno-catch-value")
+set(CMAKE_CXX_FLAGS_DEBUG   " ${CMAKE_CXX_FLAGS} -DDEBUG -g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE " ${CMAKE_CXX_FLAGS} -DNDEBUG -O3")
+
+option(OPT_USE_DOUBLE "using double instead of float in calc" ON)
+
+find_package(CUDA ${CUDA_VERSION} REQUIRED)
+list(APPEND INCLUDE_PATHS ${CUDA_INCLUDE_DIRS})
+list(APPEND LINK_LIBS 
+    ${CUDA_LIBRARIES}
+    #${CUDA_CUFFT_LIBRARIES}
+    # ${CUDA_CUBLAS_LIBRARIES}
+    #${CUDA_cupti_LIBRARY}
+    #${CUDA_curand_LIBRARY}
+    #${CUDA_cusparse_LIBRARY}
+    #${CUDA_npp_LIBRARY}
+    #${CUDA_nppc_LIBRARY}
+    #${CUDA_nppi_LIBRARY}
+    #${CUDA_npps_LIBRARY}
+    #${CUDA_nvcuvenc_LIBRARY}
+    # ${CUDA_nvcuvid_LIBRARY}
+
+set(SRC ${PROJECT_SOURCE_DIR}/src)
+set(VINA_DIR ${SRC}/lib)
+set(CUVINA_DIR ${SRC}/cuvina)
+list(APPEND VINA_SRC
+    ${CUVINA_DIR}/cuvina.cpp
+    ${CUVINA_DIR}/bfgs.cu
+    # ${CUVINA_DIR}/vinasrv.cpp
+    ${VINA_DIR}/ad4cache.cpp
+    ${VINA_DIR}/cache.cpp
+    ${VINA_DIR}/conf_independent.cpp
+    ${VINA_DIR}/coords.cpp
+    ${VINA_DIR}/grid.cpp
+    ${VINA_DIR}/model.cpp
+    ${VINA_DIR}/monte_carlo.cpp
+    ${VINA_DIR}/mutate.cpp
+    ${VINA_DIR}/non_cache.cpp
+    ${VINA_DIR}/parallel_mc.cpp
+    ${VINA_DIR}/parallel_progress.cpp
+    ${VINA_DIR}/parse_pdbqt.cpp
+    ${VINA_DIR}/quasi_newton.cpp
+    ${VINA_DIR}/quaternion.cpp
+    ${VINA_DIR}/random.cpp
+    ${VINA_DIR}/szv_grid.cpp
+    ${VINA_DIR}/utils.cpp
+    ${VINA_DIR}/vina.cpp
+    ${VINA_DIR}/exec.cpp
+    ${VINA_DIR}/log.cpp
+)
+list(APPEND SRC_FILES 
+        ${VINA_SRC}
+)
+list(APPEND LINK_LIBS
+    boost_system
+    boost_thread
+    boost_serialization
+    boost_filesystem
+    boost_program_options
+)
+cuda_add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
+target_link_libraries(${PROJECT_NAME} ${LINK_LIBS} -lpthread)   
+# cuda_add_cublas_to_target (${PROJECT_NAME})
+
+if (OPT_USE_DOUBLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_DOUBLE=1)
+else()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_DOUBLE=0)
+endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE USE_CUDA_VINA=1)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+cuda_add_executable(vina ${SRC}/main/main.cpp)
+TARGET_LINK_LIBRARIES(vina pthread ${PROJECT_NAME} ${LNK_LIBS} )
+install(TARGETS ${ONE_TEST_TARGET} RUNTIME DESTINATION bin/)
+
+

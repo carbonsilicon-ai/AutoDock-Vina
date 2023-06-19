@@ -21,6 +21,7 @@
 */
 
 #include "grid.h"
+#include "log.h"
 
 void grid::init(const grid_dims& gd) {
 	m_data.resize(gd[0].n_voxels + 1, gd[1].n_voxels + 1, gd[2].n_voxels + 1); // number of sample points == n_voxels + 1
@@ -40,12 +41,17 @@ void grid::init(const grid_dims& gd) {
 
 fl grid::evaluate_aux(const vec& location, fl slope, fl v, vec* deriv) const { // sets *deriv if not NULL
 	vec s  = elementwise_product(location - m_init, m_factor); 
+	VDUMP("grid location", location);
+	VDUMP("grid init", m_init);
+	VDUMP("grid factor", m_factor);
+	VDUMP("grid ele product", s);
 
 	vec miss(0, 0, 0);
 	boost::array<int, 3> region;
 	boost::array<sz, 3> a;
 
 	VINA_FOR(i, 3) {
+		DBG("s[%ld] %f minus %f", i, s[i], m_dim_fl_minus_1[i]);
 		if(s[i] < 0) {
 			miss[i] = -s[i];
 			region[i] = -1;
@@ -141,6 +147,7 @@ fl grid::evaluate_aux(const vec& location, fl slope, fl v, vec* deriv) const { /
 			f011 *  mx *  y *  1  +
 			f111 *   x *  y *  1  ;
 
+		DBG("s %f %f %f gs %f %f %f %f", x, y, z, f, x_g, y_g, z_g);
 		vec gradient(x_g, y_g, z_g);
 		curl(f, gradient, v);
 		vec gradient_everywhere;

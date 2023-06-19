@@ -64,7 +64,7 @@ void check_occurrence(boost::program_options::variables_map& vm, boost::program_
 
 int main(int argc, char* argv[]) {
 	using namespace boost::program_options;
-	const std::string git_version = VERSION;
+	const std::string git_version = "CUVINA";
 	const std::string version_string = "AutoDock Vina " + git_version;
 	const std::string error_message = "\n\n\
 Please report bugs through the Issue Tracker on GitHub \n\
@@ -157,6 +157,7 @@ Thank you!\n";
 		// macrocycle closure
 		double weight_glue        = 50.000000; // linear attraction
 
+		bool cpu_only = false;
 		bool score_only = false;
 		bool local_only = false;
 		bool no_refine = false;
@@ -199,6 +200,7 @@ Thank you!\n";
 		;
 		options_description advanced("Advanced options (see the manual)");
 		advanced.add_options()
+			("cpu_only",     bool_switch(&cpu_only),     "cpu only - search will be performed on by CPU, otherwise CUDA will be used for speed up")
 			("score_only",     bool_switch(&score_only),     "score only - search space can be omitted")
 			("local_only",     bool_switch(&local_only),     "do local search only")
 			("no_refine", bool_switch(&no_refine),  "when --receptor is provided, do not use explicit receptor atoms (instead of precalculated grids) for: (1) local optimization and scoring after docking, (2) --local_only jobs, and (3) --score_only jobs")
@@ -385,6 +387,9 @@ Thank you!\n";
 		}
 
 		Vina v(sf_name, cpu, seed, verbosity, no_refine);
+		if(cpu_only) {
+			v.set_cpu_only();
+		}
 
 		// rigid_name variable can be ignored for AD4
 		if (vm.count("receptor") || vm.count("flex"))
@@ -510,4 +515,5 @@ Thank you!\n";
 		std::cerr << "\n\nAn unknown error occurred. " << error_message;
 		return 1;
 	}
+	return 0;
 }

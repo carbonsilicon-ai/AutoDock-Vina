@@ -137,7 +137,7 @@ public:
     sz get_num_atom_types() const { return num_atom_types(m_atom_typing); }
     flv get_weights() const { return m_weights; }
 
-private:
+public:
     std::vector<Potential*> m_potentials;
     std::vector<ConfIndependent*> m_conf_independents;
     flv m_weights;

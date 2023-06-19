@@ -37,7 +37,7 @@ class pdbqt_parse_error : public std::exception {
             return m_message.c_str();
         }
 
-    private:
+    public:
         const std::string m_message;
 };
 

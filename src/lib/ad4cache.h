@@ -55,7 +55,8 @@ public:
     void read(const std::string& str);
     void write(const std::string& out_prefix, const szv& atom_types, const std::string& gpf_filename="NULL",
                const std::string& fld_filename="NULL", const std::string& receptor_filename="NULL");
-private:
+//private:
+public:
 	grid_dims m_gd;
 	fl m_slope; // does not get (de-)serialized
 	std::vector<grid> m_grids;

@@ -72,6 +72,7 @@ public:
 
 template<typename T>
 class triangular_matrix {
+public:
 	std::vector<T> m_data;
 	sz m_dim;
 public:

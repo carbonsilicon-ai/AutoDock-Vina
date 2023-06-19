@@ -46,7 +46,7 @@ public:
     conf_independent_inputs();
     conf_independent_inputs(const model& m);
     std::vector<std::string> get_names() const;
-private:
+public:
     unsigned num_bonded_heavy_atoms(const model& m, const atom_index& i) const; // FIXME? - could be static, but I don't feel like declaring function friends
     unsigned atom_rotors(const model& m, const atom_index& i) const; // the number of rotatable bonds to heavy ligand atoms
 };

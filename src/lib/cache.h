@@ -37,6 +37,7 @@
 #include "model.h"
 #include "file.h"
 #include "szv_grid.h"
+#include <memory>
 
 
 struct precalculate;
@@ -59,10 +60,11 @@ public:
     void write(const std::string& out_prefix, const szv& atom_types, const std::string& gpf_filename="NULL",
                const std::string& fld_filename="NULL", const std::string& receptor_filename="NULL");
 	void populate(const model& m, const precalculate& p, const szv& atom_types_needed);
-private:
+public:
 	grid_dims m_gd;
 	fl m_slope; // does not get (de-)serialized
 	std::vector<grid> m_grids;
+    std::shared_ptr<void> m_gpu;
 };
 
 #endif

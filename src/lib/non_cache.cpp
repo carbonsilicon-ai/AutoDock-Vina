@@ -23,7 +23,7 @@
 #include "non_cache.h"
 #include "curl.h"
 
-non_cache::non_cache(const model& m, const grid_dims& gd_, const precalculate* p_, fl slope_) : sgrid(m, szv_grid_dims(gd_), p_->cutoff_sqr()), gd(gd_), p(p_), slope(slope_) {}
+non_cache::non_cache(const model& m, const grid_dims& gd_, const precalculate* p_, fl slope_) :slope(slope_), sgrid(m, szv_grid_dims(gd_), p_->cutoff_sqr()), gd(gd_), p(p_) {}
 
 fl non_cache::eval      (const model& m, fl v) const { // clean up
 	fl e = 0;

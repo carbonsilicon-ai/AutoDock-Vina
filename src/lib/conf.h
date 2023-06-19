@@ -27,6 +27,7 @@
 
 #include "quaternion.h"
 #include "random.h"
+#include "log.h"
 
 struct scale {
 	fl position;
@@ -136,7 +137,7 @@ struct rigid_conf {
 		::print(position);
 		::print(orientation);
 	}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned version) {
@@ -162,6 +163,7 @@ struct ligand_conf {
 		torsions_set_to_null(torsions);
 	}
 	void increment(const ligand_change& c, fl factor) {
+		DBG("ligand ci torsion %lu alpha %f", torsions.size(), factor);
 		rigid.increment(c.rigid, factor);
 		torsions_increment(torsions, c.torsions, factor);
 	}
@@ -173,7 +175,7 @@ struct ligand_conf {
 		rigid.print();
 		printnl(torsions);
 	}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned version) {
@@ -203,7 +205,7 @@ struct residue_conf {
 	void print() const {
 		printnl(torsions);
 	}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned version) {
@@ -282,6 +284,54 @@ struct conf {
 		VINA_FOR_IN(i, flex)
 			flex[i].torsions.resize(s.flex[i], 0); // FIXME?
 	}
+	conf(const conf_size& s, fl *arr) : ligands(s.ligands.size()), flex(s.flex.size()) {
+		VINA_FOR_IN(i, ligands)
+			ligands[i].torsions.resize(s.ligands[i], 0); // FIXME?
+		VINA_FOR_IN(i, flex)
+			flex[i].torsions.resize(s.flex[i], 0); // FIXME?
+		load_from(arr);
+	}
+	sz num_floats() const {
+		sz tmp = 0;
+		VINA_FOR_IN(i, ligands)
+			tmp += 7 + ligands[i].torsions.size();
+		VINA_FOR_IN(i, flex)
+			tmp += flex[i].torsions.size();
+		return tmp;
+	}
+	void dump_to(fl *arr) {
+		VINA_FOR_IN(i, ligands) {
+			auto &p = ligands[i].rigid.position;
+			auto &o = ligands[i].rigid.orientation;
+			*arr++ = p.data[0], *arr++ = p.data[1], *arr++ = p.data[2];
+			*arr++ = o.R_component_1(), *arr++ = o.R_component_2(), *arr++ = o.R_component_3(), *arr++ = o.R_component_4();
+			VINA_FOR_IN(j, ligands[i].torsions) {
+				*arr++ = ligands[i].torsions[j];
+			}
+		}
+		VINA_FOR_IN(i, flex) {
+			VINA_FOR_IN(j, ligands[i].torsions) {
+				*arr++ = flex[i].torsions[j];
+			}
+		}
+	}
+	void load_from(fl *arr) {
+		VINA_FOR_IN(i, ligands) {
+			auto &p = ligands[i].rigid.position;
+			auto &o = ligands[i].rigid.orientation;
+			p.data[0] = *arr++, p.data[1] = *arr++, p.data[2] = *arr++;
+			o = qt(arr[0], arr[1], arr[2], arr[3]);
+			arr += 4;
+			VINA_FOR_IN(j, ligands[i].torsions) {
+                ligands[i].torsions[j] = *arr++;
+            }
+		}
+		VINA_FOR_IN(i, flex) {
+			VINA_FOR_IN(j, ligands[i].torsions) {
+                flex[i].torsions[j] = *arr++;
+			}
+		}
+	}
 	void set_to_null() {
 		VINA_FOR_IN(i, ligands)
 			ligands[i].set_to_null();
@@ -346,7 +396,7 @@ struct conf {
 		VINA_FOR_IN(i, flex)
 			flex[i].print();
 	}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned version) {

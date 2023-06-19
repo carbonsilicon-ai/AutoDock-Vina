@@ -28,7 +28,7 @@
 struct atom_base : public atom_type {
 	fl charge;
 	atom_base() : charge(0) {}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive> 
 	void serialize(Archive& ar, const unsigned version) {

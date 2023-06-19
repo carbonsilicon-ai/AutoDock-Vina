@@ -65,7 +65,7 @@ struct pdbqt_initializer; // forward declaration - only declared in parse_pdbqt.
 struct precalculate_byatom; // forward declaration
 
 fl eval_interacting_pairs(const precalculate_byatom& p, fl v, const interacting_pairs& pairs, const vecv& coords, const bool with_max_cutoff=false);
-fl eval_interacting_pairs_deriv(const precalculate_byatom& p, fl v, const interacting_pairs& pairs, const vecv& coords, vecv& forces, const bool with_max_cutoff=false);
+fl eval_interacting_pairs_deriv(int &seq, const precalculate_byatom& p, fl v, const interacting_pairs& pairs, const vecv& coords, vecv& forces, const bool with_max_cutoff=false);
 
 struct model {
 public:
@@ -168,7 +168,8 @@ public:
 	const atom& get_atom(const atom_index& i) const { return (i.in_grid ? grid_atoms[i.i] : atoms[i.i]); }
 	      atom& get_atom(const atom_index& i)       { return (i.in_grid ? grid_atoms[i.i] : atoms[i.i]); }
 
-private:
+// private:
+public:
 	friend struct cache;
 	friend struct non_cache;
 	friend struct ad4cache;
@@ -219,6 +220,10 @@ private:
 
 	sz m_num_movable_atoms;
 	atom_type::t m_atom_typing_used;
+
+	// SrcModel
+	std::shared_ptr<void> m_gpu;
+	void print() const;
 };
 
 #endif

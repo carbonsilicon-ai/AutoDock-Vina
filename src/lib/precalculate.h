@@ -25,6 +25,7 @@
 
 #include "scoring_function.h"
 #include "matrix.h"
+#include <memory>
 
 
 //Forward declaration
@@ -33,7 +34,7 @@ struct model;
 struct precalculate_element
 {
 public:
-    precalculate_element(sz n, fl factor_) : fast(n, 0), smooth(n, pr(0, 0)), factor(factor_) { }
+    precalculate_element(sz n, fl factor_) : smooth(n, pr(0, 0)), fast(n, 0), factor(factor_) {}
     fl eval_fast(fl r2) const{
         assert(r2 * factor < fast.size());
         sz i = sz(factor * r2); // r2 is expected < cutoff_sqr, and cutoff_sqr * factor + 1 < n, so no overflow
@@ -116,7 +117,7 @@ public:
         init_from_smooth_fst(rs);
     };
     prv smooth; // [(e, dor)]
-private:
+public:
     flv fast;
     fl factor;
 };
@@ -174,7 +175,7 @@ public:
         VINA_RANGE(t2, t1, m_data.dim())
         m_data(t1, t2).widen(rs, left, right);
     };
-private:
+public:
     flv calculate_rs() const{
         flv tmp(m_n, 0);
         VINA_FOR(i, m_n)
@@ -246,7 +247,7 @@ public:
         VINA_RANGE(t2, t1, m_data.dim())
         m_data(t1, t2).widen(rs, left, right);
     };
-private:
+public:
     flv calculate_rs() const{
         flv tmp(m_n, 0);
         VINA_FOR(i, m_n)
@@ -260,6 +261,8 @@ private:
     fl m_factor;
 
     triangular_matrix<precalculate_element> m_data;
+    // CuObject containing SrcModel
+    std::shared_ptr<void> m_gpu;
 };
 
 #endif

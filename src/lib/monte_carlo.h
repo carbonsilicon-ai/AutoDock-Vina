@@ -25,6 +25,7 @@
 
 #include "incrementable.h"
 #include "model.h"
+#include "cuvina/cuvina.h"
 
 struct monte_carlo {
     unsigned max_evals;
@@ -35,13 +36,16 @@ struct monte_carlo {
 	sz num_saved_mins;
 	fl mutation_amplitude;
 	unsigned local_steps;
+
     // T = 600K, R = 2cal/(K*mol) -> temperature = RT = 1.2;  global_steps = 50*lig_atoms = 2500
     monte_carlo() : max_evals(0), global_steps(2500), temperature(1.2), hunt_cap(10, 1.5, 10), min_rmsd(0.5), num_saved_mins(50), mutation_amplitude(2) {}
 
-	output_type operator()(model& m, const precalculate_byatom& p, const igrid& ig, const vec& corner1,
-                           const vec& corner2, incrementable* increment_me, rng& generator) const;
+    output_type operator()(model& m, precalculate_byatom& p, const igrid& ig, const vec& corner1,
+                           const vec& corner2, incrementable* increment_me, rng& generator, int gpu_nmc = 0) const;
 	// out is sorted
-	void operator()(model& m, output_container& out, const precalculate_byatom& p, const igrid& ig,
+	void operator()(model& m, output_container& out, precalculate_byatom& p, const igrid& ig,
+                    const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator, int gpu_nmc = 0) const;
+	void cpu(model& m, output_container& out, precalculate_byatom& p, const igrid& ig,
                     const vec& corner1, const vec& corner2, incrementable* increment_me, rng& generator) const;
 };
 

@@ -30,7 +30,7 @@ struct atom_index {
 	bool in_grid;
 	atom_index() : i(max_sz), in_grid(false) {}
 	atom_index(sz i_, bool in_grid_) : i(i_), in_grid(in_grid_) {}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive> 
 	void serialize(Archive& ar, const unsigned version) {
@@ -49,7 +49,7 @@ struct bond {
 	bool rotatable;
 	bond() : length(0), rotatable(false) {}
 	bond(const atom_index& connected_atom_index_, fl length_, bool rotatable_) : connected_atom_index(connected_atom_index_), length(length_), rotatable(rotatable_) {}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive> 
 	void serialize(Archive& ar, const unsigned version) {
@@ -63,7 +63,7 @@ struct atom : public atom_base {
     vec coords;
 	std::vector<bond> bonds;
 	atom() : coords(max_vec) {}
-private:
+public:
 	friend class boost::serialization::access;
 	template<class Archive> 
 	void serialize(Archive& ar, const unsigned version) {
