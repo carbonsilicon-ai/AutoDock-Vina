@@ -384,6 +384,7 @@ Thank you!\n";
 			}
 			std::cout << "Exhaustiveness: " << exhaustiveness << "\n";
 			std::cout << "CPU: " << cpu << "\n";
+			std::cout << "CUDA device: " << gpu_device << "\n";
 			if (!vm.count("seed"))
 				std::cout << "Seed: " << seed << "\n";
 			std::cout << "Verbosity: " << verbosity << "\n";

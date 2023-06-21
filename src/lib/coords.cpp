@@ -39,7 +39,7 @@ std::pair<sz, fl> find_closest(const vecv& a, const output_container& b) {
 	}
 	return tmp;
 }
-#if 1
+#if 0
 void add_to_output_container(output_container& out, const output_type& t, fl min_rmsd, sz max_size) {
 	std::pair<sz, fl> closest_rmsd = find_closest(t.coords, out);
 	printf("closest sz %lu rmsd %f out sz %lu min rmsd %f max sz %lu\n", closest_rmsd.first, closest_rmsd.second, out.size(), min_rmsd, max_size);

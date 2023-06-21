@@ -93,7 +93,7 @@ struct gpu_monte_carlo {
 		clk.mark();
         while (step < int(host->global_steps)) {
             int batch = step == 0 ? host->num_saved_mins : gpu_steps;
-			printf("run cuda mc batch %d bfgs steps %d\n", batch, host->local_steps);
+			// printf("run cuda mc batch %d bfgs steps %d\n", batch, host->local_steps);
             increment_me->increase(batch);
 			step += batch;
             auto suc = dock::makeMCInputs(m_gpu_mc_inputs, m, nr_mc, nr_mutable_entities, batch,
@@ -167,7 +167,7 @@ void monte_carlo::cpu(model& m, output_container& out, precalculate_byatom& p,
 	quasi_newton_par.use_gpu = true;
     quasi_newton_par.max_steps = local_steps;
 	int bfgscnt = 0;
-	printf("mc global steps %u max_evals %u\n", global_steps, max_evals);
+	// printf("mc global steps %u max_evals %u\n", global_steps, max_evals);
 	// sz last = 0;
 	// dock::Clock clk;
 	// clk.mark();
@@ -202,7 +202,7 @@ void monte_carlo::cpu(model& m, output_container& out, precalculate_byatom& p,
 				quasi_newton_par(m, p, ig, tmp, g, authentic_v, evalcount);
 				m.set(tmp.c); // FIXME? useless?
 				tmp.coords = m.get_heavy_atom_movable_coords();
-				printf("add step %u e %f coord %f %f %f\n", step, tmp.e, m.coords[0].data[0], m.coords[0].data[1], m.coords[0].data[2]);
+				// printf("add step %u e %f coord %f %f %f\n", step, tmp.e, m.coords[0].data[0], m.coords[0].data[1], m.coords[0].data[2]);
 				add_to_output_container(out, tmp, min_rmsd, num_saved_mins); // 20 - max size
 				if(tmp.e < best_e)
 					best_e = tmp.e;
@@ -216,7 +216,7 @@ void monte_carlo::cpu(model& m, output_container& out, precalculate_byatom& p,
 void monte_carlo::operator()(model& m, output_container& out, precalculate_byatom& p,
                              const igrid& ig, const vec& corner1, const vec& corner2,
                              incrementable* increment_me, rng& generator, int gpu_nmc) const {
-	printf("mc num-min %lu steps %u local steps %u\n", num_saved_mins, global_steps, local_steps);
+	// printf("mc num-min %lu steps %u local steps %u\n", num_saved_mins, global_steps, local_steps);
 	bool run_cpu = true;
 #if 0
 	if (gpu_nmc > 0) {

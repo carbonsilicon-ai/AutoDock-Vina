@@ -321,11 +321,12 @@ int htree_nodes_prep(Segment *segs, struct heterotree<T> &tree, int *layermap) {
     seg.end    = tree.node.end;
     seg.parent = -1;
     seg.layer  = 0;
-
+#if 0
     for (auto i = 0; i < idx; i++) {
         auto &seg = segs[i];
         printf("SEG %d/%d: parent %d begin %d end %d layer %d\n", i, idx, seg.parent, seg.begin, seg.end, seg.layer);
     }
+#endif
     return layers;
 }
 // layer: which layer segment in tree, start from 0
@@ -348,7 +349,7 @@ int seg_tree_nodes_copy(int parent, int idx, Segment *segs, struct tree<segment>
     make_vec(seg.relative_axis, axis.data[0], axis.data[1], axis.data[2]);
     make_vec(seg.relative_origin, origin.data[0], origin.data[1], origin.data[2]);
     tree.idx = myidx;
-    printf("COPY HSubTree, my idx %d parent %d child %d begin %d end %d\n", myidx, parent, tree.nr_nodes, seg.begin, seg.end);
+    // printf("COPY HSubTree, my idx %d parent %d child %d begin %d end %d\n", myidx, parent, tree.nr_nodes, seg.begin, seg.end);
     return layers + 1;
 }
 void segvar_tree_nodes_restore(int parent, int idx, const SegmentVars *segs, struct tree<segment> &tree) {
@@ -400,7 +401,7 @@ int htree_nodes_copy(Segment *segs, struct heterotree<T> &tree) {
     seg.end = tree.node.end;
     seg.parent = -1;
     seg.layer = 0;
-    printf("COPY HTree, my idx %d child %d begin %d end %d\n", myidx, tree.nr_nodes, seg.begin, seg.end);
+    // printf("COPY HTree, my idx %d child %d begin %d end %d\n", myidx, tree.nr_nodes, seg.begin, seg.end);
     return layers+1;
 }
 template<typename T>
@@ -672,13 +673,13 @@ SrcModel *make_src_model(Memory *mem, model *m, const precalculate_byatom &p) {
             for (auto k = 0; k < ligand.nr_node; k++) {
                 if (ligand.tree[k].layer == j) {
                     ligand.layer_map[mapidx] = k;
-                    printf("layermap %d = %d\n", mapidx, k);
+                    // printf("layermap %d = %d\n", mapidx, k);
                     nr++;
                     mapidx++;
                 }
             }
             ligand.layers[layersidx+1] = nr;
-            printf("layer %d layersidx %d mapidx %d nr %d\n", j, layersidx, ligand.layers[layersidx], nr);
+            // printf("layer %d layersidx %d mapidx %d nr %d\n", j, layersidx, ligand.layers[layersidx], nr);
         }
 
         for (auto j = 0u; j < sm->natoms; j ++) {

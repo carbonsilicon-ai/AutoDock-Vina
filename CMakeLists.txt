@@ -25,9 +25,11 @@ set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -w -std=c++14 -DUSE_CUDA -DDLIB_NO_GUI_SU
 #    -gencode arch=compute_61,code=sm_61 -gencode arch=compute_75,code=compute_75 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_86,code=sm_86; 
 #    --use_fast_math)
 if(CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "Debug"))
+    message("NVCC Debug")
     set(NVCC_FLAGS_DEBUG -DNDEBUG -O0 -g -G)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} ${NVCC_FLAGS_DEBUG})
 else()
+    message("NVCC Release")
     set(NVCC_FLAGS_RELEASE -DNDEBUG -O3 --use_fast_math)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} ${NVCC_FLAGS_RELEASE})
 endif()
