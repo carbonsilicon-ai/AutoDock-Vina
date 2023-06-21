@@ -2,8 +2,8 @@
 #ifndef VINA_UTIL_H
 #define VINA_UTIL_H
 
-#include "cuvina/vinadef.h"
-#include "cuvina/culog.h"
+#include "vinadef.h"
+#include "culog.h"
 #if USE_CUDA_VINA == 0
 #include <cmath>
 #endif
@@ -673,6 +673,11 @@ FORCE_INLINE int get_flex_conf_angle_offset(SrcModel *src, int idx) {
         offset += src->flex[i].nr_node - 1;// 3+4 for position and oritentation, rest will be torsions
     }
     return offset; 
+}
+
+template <typename T>
+inline __host__ __device__ T MAX(const T a, const T b) {
+    return a > b ? a : b;
 }
 };
 #endif

@@ -50,7 +50,7 @@
 #include "ad4cache.h"
 #include "quasi_newton.h"
 #include "coords.h" // add_to_output_container
-#include "vina_utils.h"
+#include "utils.h"
 #include "scoring_function.h"
 #include "precalculate.h"
 

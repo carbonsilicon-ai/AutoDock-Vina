@@ -25,7 +25,7 @@
 #include "mutate.h"
 #include "quasi_newton.h"
 #include "cuvina/cuvina.h"
-#include "utils.h"
+#include "misc/helper.h"
 namespace dock {
 // void run_bfgs(Model *cpum, Model *m, PrecalculateByAtom *pa, Cache *ch, BFGSCtx *ctx, int max_steps, Flt average_required_improvement, Size over , cudaStream_t stream);
 };
@@ -167,7 +167,7 @@ void monte_carlo::cpu(model& m, output_container& out, precalculate_byatom& p,
 	quasi_newton_par.use_gpu = true;
     quasi_newton_par.max_steps = local_steps;
 	int bfgscnt = 0;
-	// printf("mc global steps %u max_evals %u\n", global_steps, max_evals);
+	printf("mc global steps %u max_evals %u\n", global_steps, max_evals);
 	// sz last = 0;
 	// dock::Clock clk;
 	// clk.mark();

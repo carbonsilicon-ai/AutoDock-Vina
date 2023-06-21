@@ -25,9 +25,13 @@
 #include <vector> // ligand paths
 #include <exception>
 #include <boost/program_options.hpp>
-#include "vina.h"
-#include "utils.h"
-#include "scoring_function.h"
+#include "lib/vina.h"
+#include "lib/utils.h"
+#include "lib/scoring_function.h"
+
+namespace dock {
+bool create_vina_server(int device, int nrinst);
+};
 
 struct usage_error : public std::runtime_error {
 	usage_error(const std::string& message) : std::runtime_error(message) {}
@@ -157,7 +161,7 @@ Thank you!\n";
 		// macrocycle closure
 		double weight_glue        = 50.000000; // linear attraction
 
-		bool cpu_only = false;
+		int gpu_device = -1;
 		bool score_only = false;
 		bool local_only = false;
 		bool no_refine = false;
@@ -200,7 +204,6 @@ Thank you!\n";
 		;
 		options_description advanced("Advanced options (see the manual)");
 		advanced.add_options()
-			("cpu_only",     bool_switch(&cpu_only),     "cpu only - search will be performed on by CPU, otherwise CUDA will be used for speed up")
 			("score_only",     bool_switch(&score_only),     "score only - search space can be omitted")
 			("local_only",     bool_switch(&local_only),     "do local search only")
 			("no_refine", bool_switch(&no_refine),  "when --receptor is provided, do not use explicit receptor atoms (instead of precalculated grids) for: (1) local optimization and scoring after docking, (2) --local_only jobs, and (3) --score_only jobs")
@@ -231,6 +234,7 @@ Thank you!\n";
 		options_description misc("Misc (optional)");
 		misc.add_options()
 			("cpu", value<int>(&cpu)->default_value(0), "the number of CPUs to use (the default is to try to detect the number of CPUs or, failing that, use 1)")
+			("gpu", value<int>(&gpu_device)->default_value(-1), "GPU ID used to vina docking")
 			("seed", value<int>(&seed)->default_value(0), "explicit random seed")
 			("exhaustiveness", value<int>(&exhaustiveness)->default_value(8), "exhaustiveness of the global search (roughly proportional to time): 1+")
 			("max_evals", value<int>(&max_evals)->default_value(0), "number of evaluations in each MC run (if zero, which is the default, the number of MC steps is based on heuristics)")
@@ -387,8 +391,10 @@ Thank you!\n";
 		}
 
 		Vina v(sf_name, cpu, seed, verbosity, no_refine);
-		if(cpu_only) {
+		if(gpu_device < 0) {
 			v.set_cpu_only();
+		} else {
+			dock::create_vina_server(gpu_device, 1);
 		}
 
 		// rigid_name variable can be ignored for AD4

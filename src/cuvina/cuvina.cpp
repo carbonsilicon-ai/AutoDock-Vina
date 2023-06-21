@@ -1,9 +1,9 @@
 
-#include "vina/cache.h"
-#include "vina/model.h"
-#include "vina/precalculate.h"
+#include "lib/cache.h"
+#include "lib/model.h"
+#include "lib/precalculate.h"
 #include "vinadef.h"
-#include "vina/log.h"
+#include "lib/log.h"
 #include "cuvina.h"
 #include <unordered_map>
 #include "cuda_context.h"
@@ -1523,79 +1523,6 @@ void output_ligand_conf(ligand_conf &dst, LigandConf &src) {
 void output_flex_conf(residue_conf &dst, ResidueConf &src) {
     memcpy(dst.torsions.data(), src.torsions, dst.torsions.size() * sizeof(dst.torsions[0]));
 }
-#if USE_CUDA_VINA
-void cuda_model_set_conf(Model &cpum, Model &m, Conf &c, cudaStream_t stream);
-void cuda_cache_eval_deriv(Model *cpum, Cache *c, Model *m, cudaStream_t stream);
-void cu_model_eval_deriv(Model *cpum, Model *m, PrecalculateByAtom *p, BFGSCtx *ctx, cudaStream_t stream);
-fl run_model_eval_deriv(const precalculate_byatom &p, const igrid &ig, 
-                        change &g, std::shared_ptr<void> mobj, std::shared_ptr<void> ctxobj) {
-    submit_vina_server([&](cudaStream_t stream) {
-        auto &che = (const cache &)ig;
-        // const
-        auto ch = extract_cuda_object<Cache>(che.m_gpu);
-        auto pa = extract_cuda_object<PrecalculateByAtom>(p.m_gpu);
-        auto md = extract_cuda_object<Model>(mobj);
-        auto cpum = extract_object<Model>(mobj);
-        auto ctx = extract_cuda_object<BFGSCtx>(ctxobj);
-
-        cuda_model_set_conf(*cpum, *md, ctx->c, stream);
-        cuda_cache_eval_deriv(cpum, ch, md, stream);
-        cu_model_eval_deriv(cpum, md, pa, ctx, stream);
-
-        auto cpumem = extract_memory(ctxobj);
-        auto cudamem = extract_cuda_memory(ctxobj);
-        cudaMemcpyAsync(cpumem->ptr(), cudamem->ptr(), cpumem->size(), cudaMemcpyDeviceToHost, stream);
-        auto err = cudaStreamSynchronize(stream);
-        if (err != cudaSuccess) {
-            std::cerr << "vina eval fail, err: " << cudaGetErrorString(err) << std::endl;
-        }
-    }) ;
-
-    auto cpumem = extract_memory(ctxobj);
-    cpumem->restore();
-    auto ctx = extract_object<BFGSCtx>(ctxobj);
-    auto chg = &ctx->g;
-    // output changes
-    for (auto i = 0u; i < g.ligands.size(); i ++) {
-        output_ligand_change(g.ligands[i], chg->ligands[i]);
-    }
-    for (auto i = 0u; i < g.flex.size(); i ++) {
-        output_flex_change(g.flex[i], chg->flex[i]);
-    }
-
-    return ctx->e;
-
-}
-#else
-extern void model_eval_deriv(Model &m, PrecalculateByAtom &p, Cache &c, Change &g);
-extern void model_set_conf(Model &m, Conf &c);
-fl run_model_eval_deriv(const precalculate_byatom &p, const igrid &ig, 
-                        change &g, std::shared_ptr<void> mobj, std::shared_ptr<void> ctxobj) {
-    auto &che = (const cache &)ig;
-
-    // const
-    auto ch = extract_object<Cache>(che.m_gpu);
-    auto pa = extract_object<PrecalculateByAtom>(p.m_gpu);
-    auto md = extract_object<Model>(mobj);
-    auto ctx = extract_object<BFGSCtx>(ctxobj);
-    auto chg = &ctx->g;
-    auto cf = &ctx->c;
-
-    model_set_conf(*md, *cf);
-    model_eval_deriv(*md, *pa, *ch, *chg);
-
-    // output changes
-    for (auto i = 0u; i < g.ligands.size(); i ++) {
-        output_ligand_change(g.ligands[0], chg->ligands[0]);
-    }
-    for (auto i = 0u; i < g.flex.size(); i ++) {
-        output_flex_change(g.flex[0], chg->flex[0]);
-    }
-
-    return md->e;
-
-}
-#endif
 
 extern void run_bfgs(ModelDesc *cpum, ModelDesc *m, PrecalculateByAtom *pa, Cache *ch, BFGSCtx *ctx,
                      int max_steps, Flt average_required_improvement, Size over,

@@ -6,7 +6,6 @@
 #include <cuda_runtime_api.h>
 
 #include "context.h"
-#include "utils.h"
 
 namespace dock {
 class CudaContext : public Context {

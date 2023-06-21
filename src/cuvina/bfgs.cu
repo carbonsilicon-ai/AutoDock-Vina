@@ -6,8 +6,9 @@
 #include "grid_c.cuh"
 #include "conf_c.cuh"
 #include "model_c.cuh"
-#include <algorithm>
-#include <cmath>
+// #include <algorithm>
+// #include <cmath>
+#include <math_functions.h>
 #include "model_desc.cuh"
 #include "bfgsdef.h"
 namespace dock {
@@ -1052,7 +1053,7 @@ __device__ void bfgs_print(ModelDesc *m) {
 }
 #define BFGSIDX threadIdx.z
 // mem requirement
-#define SHARED_TMPSZ(src, nc, ng) std::max(std::max(BFGS_UPD_SZ(ng), LINESRCH_SIZE(nc, ng)), MODEL_EVAL_MEM_SIZE(src))
+#define SHARED_TMPSZ(src, nc, ng) MAX(MAX(BFGS_UPD_SZ(ng), LINESRCH_SIZE(nc, ng)), MODEL_EVAL_MEM_SIZE(src))
 #define SMSIZE(src, ng, nc, max_steps) (32 + ((ng * (ng+1)) >> 1) + 6 *ng + 2 *nc + (max_steps + 1) + SHARED_TMPSZ(src, nc, ng))
 // Model data will be updated to m->data, conf will be write to c
 __device__ void bfgs(ModelDesc *m, PrecalculateByAtom *pa, Cache *ch, int max_steps,
@@ -1402,7 +1403,7 @@ __device__ void mc_xyz(ModelDesc *m, PrecalculateByAtom *pa, Cache *ch, MCCtx *c
     beste     = mem + offset, offset++;
 
     tmp = mem + offset,
-    offset += max((int)(4 * srcm->natoms + 2), SMSIZE(srcm, ng, nc, ctx->local_steps));
+    offset += MAX((int)(4 * srcm->natoms + 2), SMSIZE(srcm, ng, nc, ctx->local_steps));
 
 #define CANDIDATE   (candidate + 1)
 #define TEMP        (ctemp + 1)

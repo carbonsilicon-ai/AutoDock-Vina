@@ -1,8 +1,8 @@
 #ifndef CUVINA_H
 #define CUVINA_H
 #include <memory>
-#include "vina/precalculate.h"
-#include "vina/cache.h"
+#include "lib/precalculate.h"
+#include "lib/cache.h"
 
 namespace dock {
 class CuObject {

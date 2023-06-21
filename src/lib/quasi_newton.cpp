@@ -108,7 +108,7 @@ struct quasi_newton_aux {
 #define QNUSAGE 1 // 0-cpu, 1-gpu, 2-compare
 #endif
 #else
-#define QNUSAGE 1 // 0-cpu, 1-gpu, 2-compare
+#define QNUSAGE 0 // 0-cpu, 1-gpu, 2-compare
 #endif
 void quasi_newton::operator()(model& m, const precalculate_byatom& p, const igrid& ig, output_type& out, change& g, const vec& v, int& evalcount) { // g must have correct size
 #if QNUSAGE == 0
@@ -187,6 +187,7 @@ void quasi_newton::gpu(model& m, const precalculate_byatom& p, const igrid& ig, 
     out.e = res;
 }
 void quasi_newton::cpu(model& m, const precalculate_byatom& p, const igrid& ig, output_type& out, change& g, const vec& v, int& evalcount) { // g must have correct size
+    // printf("cpu eval count %d\n", evalcount);
 #if QNDEBUG
     printf(">>>> before bfgs\n");
     m.print();
