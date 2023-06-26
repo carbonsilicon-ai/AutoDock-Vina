@@ -663,6 +663,7 @@ FORCE_INLINE int get_ligand_conf_angle_offset(SrcModel *src, int idx) {
     }
     return offset * 2;  // for cos + sin
 }
+#if 0
 FORCE_INLINE int get_flex_conf_angle_offset(SrcModel *src, int idx) {
     int offset = 0;
     for (int i = 0; i < idx; i++) {
@@ -670,6 +671,7 @@ FORCE_INLINE int get_flex_conf_angle_offset(SrcModel *src, int idx) {
     }
     return offset; 
 }
+#endif
 
 template <typename T>
 inline __host__ __device__ T MAX(const T a, const T b) {

@@ -397,50 +397,16 @@ FORCE_INLINE void c_model_collect_deriv_single(ModelDesc *m, Flt *e, Flt *md) {
 		}
 	}
 }
-FORCE_INLINE void c_model_eval_deriv_ligand_sum_ft(ModelDesc *m, Flt *md) {
-    SrcModel *src = m->src;
-    auto coords = model_coords(src, m, md);
-    FOR(i, src->nligand) {
-        Ligand &ligand  = src->ligands[i];
-        // first calculate all node force and torque, only for node itself, not include sub-nodes
-        CU_FORY(j, ligand.nr_node) {
-            CUDBG("ligand %d", j);
-            auto var = model_ligand(src, m, md, i, j);
-            auto minus_forces = model_minus_forces(src, m, md);
-            sum_force_and_torque_x<Segment>(ligand.tree[j], var->origin, coords, minus_forces, var->ft);
-        }
-    }
-
-}
 FORCE_INLINE void c_model_eval_deriv_ligand_sum_ft_xyz(ModelDesc *m, Flt *md) {
     SrcModel *src = m->src;
     auto coords = model_coords(src, m, md);
-    CU_FORZ(i, src->nligand) {
-        Ligand &ligand  = src->ligands[i];
-        // first calculate all node force and torque, only for node itself, not include sub-nodes
-        CU_FORY(j, ligand.nr_node) {
-            CUDBG("ligand %d", j);
-            auto var = model_ligand(src, m, md, i, j);
-            auto minus_forces = model_minus_forces(src, m, md);
-            sum_force_and_torque_x<Segment>(ligand.tree[j], var->origin, coords, minus_forces, var->ft);
-        }
+    auto minus_forces = model_minus_forces(src, m, md);
+    CU_FORYZ(i, src->nrsegs) {
+        auto &seg = src->segs[i];
+        auto &ligand = src->ligands[seg.ligandidx];
+        auto var = model_ligand(src, m, md, i, seg.segidx);
+        sum_force_and_torque_x<Segment>(seg, var->origin, coords, minus_forces, var->ft);
     }
-
-}
-FORCE_INLINE void c_model_eval_deriv_ligand_sum_ft1(ModelDesc *m, Flt *md) {
-    SrcModel *src = m->src;
-    auto coords = model_coords(src, m, md);
-    CU_FOR(i, src->nligand) {
-        Ligand &ligand  = src->ligands[i];
-        // first calculate all node force and torque, only for node itself, not include sub-nodes
-        CU_FORY(j, ligand.nr_node) {
-            CUDBG("ligand %d", j);
-            auto var = model_ligand(src, m, md, i, j);
-            auto minus_forces = model_minus_forces(src, m, md);
-            sum_force_and_torque<Segment>(ligand.tree[j], var->origin, coords, minus_forces, var->ft);
-        }
-    }
-
 }
 
 // todo

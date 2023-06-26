@@ -474,35 +474,6 @@ FORCE_INLINE void set_diagonal(Flt *h, Flt v, int ng) {
 // m: model description, used for parsing md
 // md: model variable data, will be updated
 // this runs only in one single warp
-FORCE_INLINE void model_eval_deriv(ModelDesc *m, const PrecalculateByAtom *p, const Cache *c, const Flt *cf, Flt *cg, Flt *e, Flt *md, const Flt *vs) {
-    // 970
-    // sed model::set, update conf
-    model_set_conf_ligand_xy_old(m, cf, md);
-    model_set_conf_flex_xy(m, cf, md);
-    WARPSYNC();
-
-    // 2800
-    c_cache_eval_deriv_xy(c, m, md, vs);
-    WARPSYNC();
-
-    // 3200
-    // depends on c_cache_eval_deriv
-    c_model_eval_deriv_pairs(m, p, md, vs);
-    WARPSYNC();
-
-    //3980
-    c_model_collect_deriv(m, e, md);
-    WARPSYNC();
-
-    // 5000
-    c_model_eval_deriv_ligand_sum_ft(m, md);
-    c_model_eval_deriv_flex_sum_ft(m, md);
-    WARPSYNC();
-
-    // 5400
-    c_model_eval_deriv_ligand(m, cg, md);
-    c_model_eval_deriv_flex(m, cg, md);
-}
 // evaluate deriviate and get loss value
 // already synchronized
 FORCE_INLINE void model_eval_deriv_e_xy(ModelDesc *m, const PrecalculateByAtom *p, const Cache *c,
@@ -532,21 +503,6 @@ FORCE_INLINE void model_eval_deriv_e_xy(ModelDesc *m, const PrecalculateByAtom *
 }
 
 
-FORCE_INLINE void model_eval_deriv_update_2warp(ModelDesc *m, Flt *cg, Flt *md) {
-
-    //3980
-    c_model_update_forces_xy(m, md);
-    XYSYNC();
-
-    // 5000
-    c_model_eval_deriv_ligand_sum_ft(m, md);
-    c_model_eval_deriv_flex_sum_ft(m, md);
-    XYSYNC();
-
-    // 5400
-    c_model_eval_deriv_ligand(m, cg, md);
-    c_model_eval_deriv_flex(m, cg, md);
-}
 // for an accepted conf, update deriviate and output change to cg
 FORCE_INLINE void model_update_xyz(ModelDesc *m, Flt *cg, Flt *md) {
 

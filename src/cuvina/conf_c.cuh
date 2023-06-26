@@ -155,13 +155,14 @@ FORCE_INLINE void first_segment_set_conf_c(int idx, int blk, Segment *seg, Segme
 
 __device__ void dump_ligands(ModelDesc *m, Flt *md) {
     SrcModel *src = m->src;
-    FOR (i, src->nligand) {
+    FOR (i, src->nall) {
         printf("ligand %d\n", i);
         Ligand &ligand  = src->ligands[i];
+        auto tree = src->segs + ligand.seg_offset;
         FOR(k, ligand.nr_node) {
             int j               = ligand.nr_node - k - 1;  // from root to leaf
             printf("\tnode %d/%d:\n", j, ligand.nr_node);
-            Segment &seg        = ligand.tree[j];
+            Segment &seg        = tree[j];
             auto segvar = model_ligand(src, m, md, i, j);
             printf("\tparent %d layer %d\n", seg.parent, seg.layer);
             printf("\t\tcoord begin %d end %d\n", seg.begin, seg.end);
@@ -193,34 +194,6 @@ __device__ void dump_segvars(int line, ModelDesc *m, Flt *md) {
 
 #define DUMP_SEGVARS(m, md) 
 // #define DUMP_SEGVARS(m, md) dump_segvars(__LINE__, m, md)
-// single
-FORCE_INLINE void model_set_conf_ligand_1(ModelDesc *m, const Flt *c, Flt *md) {
-    SrcModel *src = m->src;
-    Atom *atoms   = src->atoms;
-    if (threadIdx.x == 0 && threadIdx.y == 0) {
-        CUDBG("nligand %d", src->nligand);
-    }
-    CU_FOR2 (i, src->nligand) {
-        Ligand &ligand  = src->ligands[i];
-        auto p          = get_ligand_conf(src, c, i);
-        FOR(k, ligand.nr_node) {
-            int j               = ligand.nr_node - k - 1;  // from root to leaf
-            Segment &seg        = ligand.tree[j];
-            auto segvar = model_ligand(src, m, md, i, j);
-            auto coords = model_coords(src, m, md);
-            CUDBG("ligand %d parent %d k %d", j, seg.parent, k);
-            if (seg.parent >= 0) {
-                Segment &parent        = ligand.tree[seg.parent];
-                auto parentVar = model_ligand(src, m, md, i, seg.parent);
-                segment_set_conf(parentVar, segvar, &seg, atoms, coords, get_ligand_conf_torsion(p, k - 1));
-            } else {
-                // root
-                rigid_body_set_conf(&seg, segvar, atoms, coords, p);
-            }
-        }
-    }
-    DUMP_SEGVARS(m, md);
-}
 
 #define LIGAND_LAYER_SET 1
 
@@ -355,6 +328,7 @@ FORCE_INLINE void model_set_conf_ligand_xyz(ModelDesc *m, const Flt *c, Flt *md,
         Ligand &ligand = src->ligands[i];
         auto p         = get_ligand_conf(src, c, i);
         auto segvar    = model_ligand(src, m, md, i, ligand.nr_node - 1);
+        auto coords = model_coords(src, m, md);
         Segment &seg   = src->segs[ligand.seg_offset + ligand.nr_node - 1];
         const Flt * orientation;
         // setup root
