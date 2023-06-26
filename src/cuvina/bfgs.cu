@@ -428,20 +428,6 @@ FORCE_INLINE void scalar_product_array(const Flt *v, Flt *tmp, Flt *out,int n, c
 }
 // calc sum(v1[x] * v2[x]) for x in [0,n-1] and set to out, tmp should has same siz of v1 and v1, which is n
 // out requires n, tmp requires n
-FORCE_INLINE void scalar_product_array1(const Flt *v1, const Flt *v2, Flt *out,  Flt *tmp, int n, const threadids &tids) {
-    FOR_TID(idx, n) {
-        tmp[idx] = v1[idx] * v2[idx];
-    }
-    SYNC();
-    if (INMAIN()) {
-        Flt sum = 0;
-        for (int i = 0; i < n; i++) {
-            sum += tmp[i];
-            // printf("scalar %d %f * %f = %f, sum %f\n", i, v1[i], v2[i], tmp[i], sum);
-        }
-        *out = sum;
-    }
-}
 FORCE_INLINE void scalar_product_array(const Flt *v1, const Flt *v2, Flt *out,  Flt *tmp, int n, const threadids &tids) {
     FOR_TID(idx, n) {
         tmp[idx] = v1[idx] * v2[idx];
@@ -904,7 +890,7 @@ __device__ void line_search(ModelDesc *m, PrecalculateByAtom *pa, Cache *ch, Flt
 
     Flt *active_md = md + m->active *m->szflt;
 
-    scalar_product_array1(p, g, pg, tmp, ng, TIDS); // tmp require ng
+    scalar_product_array(p, g, pg, tmp, ng, TIDS); // tmp require ng
     SYNC();
 
 #if BFGSDEBUG
@@ -1555,10 +1541,6 @@ GLOBAL void bfgs_kernel(ModelDesc *m, PrecalculateByAtom *pa, Cache *ch, BFGSCtx
     if (INMAIN()) {
         ctx->e = *f0;
     }
-    // this covers model.set(out.c) in the end of quasi_newton()
-    // Flt *active = m->data + m->szflt * m->active;
-    // model_set_conf_ligand_xy(m, c, active);
-    // model_set_conf_flex_xy(m, c, active);
 }
 #define MDDBG(fmt, ...) do{ printf("\t" fmt "\n",  __LINE__, blockIdx.x, blockIdx.y, blockIdx.z, threadIdx.x, threadIdx.y, threadIdx.z,  __VA_ARGS__);}while(0)
 #define MDPV(hdr, pv, ...) MDDBG(hdr ": %f %f %f", __VA_ARGS__, (pv)->d[0], (pv)->d[1], (pv)->d[2])
